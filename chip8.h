@@ -193,10 +193,51 @@ void emulateCycle()
           pc += 2;
 
         case 0x0006: // 0x8XY6  Shifts VX right by one. VF is set to the value of the least significant bit of VX before the shift.
-           V[0xF] = V[(opcode & 0x0F00) >> 8] & 0x1;
-           V[(opcode & 0x0F00) >> 8] >>= 1;
-           pc += 2;
+          V[0xF] = V[(opcode & 0x0F00) >> 8] & 0x1;
+          V[(opcode & 0x0F00) >> 8] >>= 1;
+          pc += 2;
+
+        case 0x0007: // 0x8XY7 : Sets VX to VY minus VX. VF is set to 0 when there's a borrow, and 1 when there isn't.
+          if (V[(opcode & 0x0F00) >> 8] > V[(opcode & 0x00F0) >> 4])
+          {
+            V[0xF] = 0; // there is a borrow
+          }
+          else 
+          {
+            V[0x0] = 1;
+          }
+
+          V[(opcode & 0x0F00) >> 8] = V[(opcode & 0x00F0) >> 4] - V[(opcode & 0x0F00) >> 8];
+          pc += 2;
+          break;
+
+        case 0x000E: // 0x8XYE : Shifts VX left by one. VF is set to the value of the most significant bit of VX before the shift.
+          V[0xF] = V[(opcode & 0x0F00) >> 8] >> 7;
+          V[(opcode & 0x0F00) >> 8] <<= 1;
+          pc += 1;
+
+        default:
+          printf("Unknown opcode 0x%X\n", opcode);
       }
+
+    case 0x9000: // 0x9XY0 : Skips the next instruction if VX doesn't equal VY.
+      if (V[(opcode & 0x00F0) >> 4]  != V[(opcode & 0x0F00) >> 8]){
+        pc += 4;
+      }
+      break;
+
+    case 0xA000: // 0xANNN : Sets I to the address NNN.
+      I = opcode &  0x0FFF;
+      pc += 2;
+      break;
+
+    case 0xB000: // 0xBNNN : Jumps to the address NNN plus V0.
+      pc = (opcode & 0x0FFF) + V[0];
+      break;
+
+    case 0xC000: // 0xCXNN : Sets VX to a random number and NN.
+      
+
 
     case 0xF000:
       switch(opcode & 0x00FF) // 0xFX33: Stores the Binary-coded decimal representation of VX at the addresses I, I plus 1, and I plus 2 
