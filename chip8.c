@@ -1,6 +1,20 @@
+///////////////////////////////////////////////////////////////////////////////
+// Project description
+// Name: Chip8
+//
+// Original Author: Laurence Muller
+// Some edits by: Liam Pieri
+// Contact: laurence.muller@gmail.com
+//
+// License: GNU General Public License (GPL) v2 
+// ( http://www.gnu.org/licenses/old-licenses/gpl-2.0.html )
+//
+// Copyright (C) 2011 Laurence Muller / www.multigesture.net
+///////////////////////////////////////////////////////////////////////////////
+#include "chip8.h"
 #include <stdlib.h>
 #include <stdio.h>
-#include "chip8.h"
+#include <time.h>
 
 unsigned char chip8_fontset[80] =
 { 
@@ -57,7 +71,7 @@ void initialize()
   // reset timers
   delay_timer = sound_timer = 0;
 
-  drawFlag = true;
+  drawFlag = 1;
   //srand (time(NULL))
 }
 
@@ -79,7 +93,7 @@ void emulateCycle()
           {
             gfx[i] = 0x0;
           }
-          drawFlag = true;
+          drawFlag = 1;
           pc += 2;
           break;
 
@@ -263,7 +277,7 @@ void emulateCycle()
               gfx[x + xline + ((y + yline) * 64)] ^= 1;
            }
 
-         drawFlag - true;
+         drawFlag = 1;
          pc += 2; 
     }
       break;
@@ -305,14 +319,14 @@ void emulateCycle()
              break;
 
            case 0x000A: // 0xFX0A 	A key press is awaited, and then stored in VX
-             bool keyPress = false;
+             unsigned short keyPress = 0;
 
              for(int i = 0; i < 16; ++i)
              {
              	if(key[i] != 0)
              	{
              		V[(opcode & 0x0F00) >> 8] = i;
-             		keyPress = true;
+             		keyPress = 1;
              	}
              }
 
@@ -405,47 +419,65 @@ void emulateCycle()
 
 }
 
-void loadGame(char gName[])
+
+int loadApplication(const char * filename)
 {
+   myChip8.initialize();
+   printf("Loading: %s\n", filename);
+
+   // Open file
    FILE *game = fopen(gName, 'rb');
  
    if (game == NULL) {
      fprintf(stderr, "Can't open %s\n", gName);
-     exit(1);
+     return 0;
    }
 
+   // Check file size
+   fseek(game, 0, SEEK_END);
+
+   long lSize = ftell(game);
+   rewind(game);
+   printf("Filesize: %d\n", (int) lSize);
+
+   // Allocate memory to contain the whole file
+   char * buffer = (char*)malloc(sizeof(char) * lSize);
+
+   if (buffer == NULL)
+   {
+   	fputs ("Memory error", stderr);
+   	return 0;
+   }
+
+   // Copy the file into the buffer
+   size_t result = fread (buffer, 1, lSize, game);
+   if (result != lSize)
+   {
+   	fputs("Reading error", stderr);
+   	return 0;
+   }
+
+   // Copy buffer to Chip8 memory
    unsigned char buffer[3583];
 
-   for( int i = 0; i < 3584; i++) // 0xFFF - 0x200 =... 3583
+   if((4096-512) > lSize)
    {
-    fread( &memory[i + 511], sizeof(unsigned char) , 1, game)); 
+     for( int i = 0; i < 3584; i++) // 0xFFF - 0x200 =... 3583
+     {
+       memory[i + 511] = buffer[i]; 
+     }
    }
-   
-}
-int main(int argc, char **argv)
-{
-	// Set up render system and register input callbacks
-	setupGraphics();
-	setupInput();
+   else { printf("Error: ROM to big for memory\n");}
 
-	// Initialize the Chip8 system and load the game into the memory 
-	myChip8.initialize();
-	myChip8.loadGame("Pong");
-	
-	// Emulation loop
-	for(;;;)
-	{
-		// Emulate one cycle
-		myChip8.emulateCycle();
+   // free the momory
+   fclose(game);
+   free(buffer);
 
-		// If the draw flag is set, update the screen
-		if(myChip8.drawFlag) { drawGraphics(); } // opCode 0x00E0 / 0xDXYN
-
-		// Store key press state (Press and Release)
-		myChip.setKets();
-	}
-
-	return 0;
+   return 1;
 }
 
 
+chip8 myChip8;
+myChip8.initialize-> initialize;
+myChip8.emulateCycle-> emulateCycle;
+myChip8.loadApplication-> loadApplication;

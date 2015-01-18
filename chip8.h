@@ -1,3 +1,17 @@
+///////////////////////////////////////////////////////////////////////////////
+// Project description
+// Name: Chip8
+//
+// Original Author: Laurence Muller
+// Some edits by: Liam Pieri
+// Contact: laurence.muller@gmail.com
+//
+// License: GNU General Public License (GPL) v2 
+// ( http://www.gnu.org/licenses/old-licenses/gpl-2.0.html )
+//
+// Copyright (C) 2011 Laurence Muller / www.multigesture.net
+///////////////////////////////////////////////////////////////////////////////
+
 unsigned short opcode;
 unsigned char memory[4096];
 unsigned char V[16];
@@ -10,7 +24,7 @@ unsigned short pc; // program counter which can have a value from 0x000 to 0xFFF
  0x200=0xFFF - Program ROM and work RAM
 */
 
-bool drawFlag;
+unsigned short drawFlag;
 
 unsigned char gfx[64 * 32]; // array that holds pixel in a binary state
 unsigned char delay_timer;
@@ -30,6 +44,6 @@ unsigned short pc;
 typedef struct chip8{
 	void (*initialize)();
 	void (*emulateCycle)();
+  void (*loadApplication)();
 	
 } chip8;
-
