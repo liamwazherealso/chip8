@@ -25,6 +25,7 @@ unsigned short pc; // program counter which can have a value from 0x000 to 0xFFF
 */
 
 unsigned short drawFlag;
+unsigned short keypress;
 
 unsigned char gfx[64 * 32]; // array that holds pixel in a binary state
 unsigned char delay_timer;
@@ -44,6 +45,6 @@ unsigned short pc;
 typedef struct chip8{
 	void (*initialize)();
 	void (*emulateCycle)();
-  void (*loadApplication)();
+    int (*loadApplication)(const char * filename);
 	
 } chip8;

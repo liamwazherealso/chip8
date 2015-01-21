@@ -89,7 +89,7 @@ void emulateCycle()
       switch(opcode & 0x000F)
       { 
         case 0x0000: // 0x00E0: Clears the screen
-          for(in i = 0; i < 2046; ++i)
+          for(int i = 0; i < 2046; ++i)
           {
             gfx[i] = 0x0;
           }
@@ -157,7 +157,7 @@ void emulateCycle()
       break;
 
     case 0x7000: // 0x7XNN : Adds NN to VX
-      V[(opcode & 0x0F00) >> 8] += (opcode & 0x00FF)
+      V[(opcode & 0x0F00) >> 8] += (opcode & 0x00FF);
       pc += 2;
       break;
 
@@ -165,7 +165,7 @@ void emulateCycle()
       switch (opcode & 0x000F)
       {
         case 0x0000: // 0x8XY0 : Sets VX to the values of VY
-          V[(opcode & 0x0F00) >> 8)] = V[(opcode & 0x00F0) >> 4];
+          V[(opcode & 0x0F00) >> 8] = V[(opcode & 0x00F0) >> 4];
           pc += 2;
           break;
 
@@ -259,15 +259,17 @@ void emulateCycle()
       break;
       
     case 0xD000: // 0xDXYN 	Sprites stored in memory at location in index register (I), maximum 8bits wide. Wraps around the screen. 
-                 // If when drawn, clears a pixel, register VF is set to 1 otherwise it is zero. All drawing is XOR drawing (i.e. it toggles the screen pixels)
+              {   // If when drawn, clears a pixel, register VF is set to 1 otherwise it is zero. All drawing is XOR drawing (i.e. it toggles the screen pixels)
       unsigned short x = V[(opcode & 0x0F00) >> 8];
       unsigned short y = V[(opcode & 0x00F0) >> 4];
       unsigned short height = opcode & 0x000F;
       unsigned short pixel;
 
       V[0xF] = 0;
-      for(int xline = 0; xline < 8; xline++)
+      for(int yline = 0; yline < height; yline++)
       {
+        pixel = memory[I + yline];
+        for(int xline = 0; xline < 8; xline++)
         if((pixel & (0x80 >> xline)) != 0)
           {
             if(gfx[(x + xline + ((y + yline) * 64))] == 1)
@@ -280,7 +282,7 @@ void emulateCycle()
          drawFlag = 1;
          pc += 2; 
     }
-      break;
+      break;} // Declarations have to be in a different scope
 
     case 0xE000:
       switch(opcode & 0x00FF)
@@ -318,7 +320,7 @@ void emulateCycle()
              pc += 2;
              break;
 
-           case 0x000A: // 0xFX0A 	A key press is awaited, and then stored in VX
+           case 0x000A: {// 0xFX0A 	A key press is awaited, and then stored in VX
              unsigned short keyPress = 0;
 
              for(int i = 0; i < 16; ++i)
@@ -333,7 +335,7 @@ void emulateCycle()
              if(!keypress) {return;} // Skip cycle and keep trying until there is a keypress
 
              pc += 2;
-             break;
+             break;}
 
            case 0x0015: // 0xFX15 :Sets the delay timer to VX.
              delay_timer = V[(opcode & 0x0F00) >> 8];
@@ -380,7 +382,7 @@ void emulateCycle()
              pc += 2;
              break;
 
-           case 0x0055: // 0xFXFF : Fills V0 to VX with memory starting at address I
+           case 0x0065: // 0xFXFF : Fills V0 to VX with memory starting at address I
              for (int i = 0; i < (opcode & 0x0F00) >> 8; i++)
              {
              	V[i] = memory[I + i];
@@ -419,17 +421,16 @@ void emulateCycle()
 
 }
 
-
 int loadApplication(const char * filename)
 {
-   myChip8.initialize();
+   initialize();
    printf("Loading: %s\n", filename);
 
    // Open file
-   FILE *game = fopen(gName, 'rb');
+   FILE *game = fopen(filename, "rb");
  
    if (game == NULL) {
-     fprintf(stderr, "Can't open %s\n", gName);
+     fprintf(stderr, "Can't open %s\n", filename);
      return 0;
    }
 
@@ -458,7 +459,6 @@ int loadApplication(const char * filename)
    }
 
    // Copy buffer to Chip8 memory
-   unsigned char buffer[3583];
 
    if((4096-512) > lSize)
    {
@@ -476,8 +476,9 @@ int loadApplication(const char * filename)
    return 1;
 }
 
-
-chip8 myChip8;
-myChip8.initialize-> initialize;
-myChip8.emulateCycle-> emulateCycle;
-myChip8.loadApplication-> loadApplication;
+int main(){
+  chip8 *myChip8 = (chip8*)malloc(sizeof(chip8));
+  myChip8->initialize = initialize;
+  myChip8->loadApplication = loadApplication;
+  myChip8->emulateCycle = emulateCycle;
+}
